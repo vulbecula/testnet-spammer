@@ -68,7 +68,7 @@ def main():
                         #check  if wallet has enough for transaction fee, if not, don't add address to payee list
                         if balance >= SEND_AMOUNT:            
                             sendaccounts.update({address.rstrip():SEND_AMOUNT})
-                            balance = balance - 2.0 # I don't know whats real transaction fee per address in sendmamy, so using 1
+                            balance = balance - (SEND_AMOUNT + 1) # I don't know whats real transaction fee per address in sendmamy, so using 1
                             counter =  counter + 1
                     #make sendmany call to wallet
                     res = action("sendmany", [account, sendaccounts])
