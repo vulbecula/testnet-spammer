@@ -12,9 +12,10 @@ RPCUSER = "x"
 #RPC password
 RPCPASSWORD = "y"
 #timeinterval for sends
-TIMEOUT_BETWEEN_SENDS = 3.0 #value in seconds
+#TIMEOUT_BETWEEN_SENDS = 3.0 #value in seconds !!!NOT USED!!!
 #send amount
-SEND_AMOUNT = 1.00
+SEND_AMOUNT = 1
+TX_FEE = 2
 
 AUTH = str(RPCUSER+":"+RPCPASSWORD)
 HEADERS = {
@@ -46,41 +47,30 @@ def getaddresses():
 def main():
     #get addresses where to send
     addresses = getaddresses()
-    #get wallet accounts
-    accountnames = json.loads(action("listaccounts"))["result"]
 
-    #loop until wallet balance over 10xby
     while(True):
         try:
-            #send by wallet account
-            for account in accountnames.keys():
-                if account is None:
-                    account = "\"\""
-                sendaccounts = {}
-                counter = 0
-                #get current account balance        
-                balance = json.loads(action("getbalance", [account]))["result"]
-                if balance > SEND_AMOUNT:
-                    print("//////////////////////////////////////")
-                    print("Sendig from account: \"{}\" balance: {}".format(account, balance))
-                    #go over addresses and add to payee list if there is balance left
-                    for address in addresses:
-                        #check  if wallet has enough for transaction fee, if not, don't add address to payee list
-                        if balance >= SEND_AMOUNT:            
-                            sendaccounts.update({address.rstrip():SEND_AMOUNT})
-                            balance = balance - (SEND_AMOUNT + 1) # I don't know whats real transaction fee per address in sendmamy, so using 1
-                            counter =  counter + 1
-                    #make sendmany call to wallet
-                    res = action("sendmany", [account, sendaccounts])
-                    resobj = json.loads(res)
-                    if(resobj["result"] is None and resobj["error"] is not None):
-                        print("Error occurred, response: {}".format(res))
-                    else:
-                        print("Send done, transaction id: {}".format(resobj["result"]))
-                    print("sended to {} accounts, from Account \"{}\" calculated \"remaining\" balance: {}".format(counter, account, balance))
-                    print("//////////////////////////////////////")
-                    print("press Ctrl+C to stop")
-                    time.sleep(TIMEOUT_BETWEEN_SENDS)
+                 
+            balance = json.loads(action("getbalance"))["result"]
+            if balance > SEND_AMOUNT + TX_FEE:
+                print("//////////////////////////////////////")
+                #go over addresses and send if there is balance left
+                for address in addresses:
+                    #check  if wallet has enough for transaction fee, if not, don't add address to payee list
+                    if balance >= SEND_AMOUNT + TX_FEE:            
+                        #sendaccounts.update({address.rstrip():SEND_AMOUNT})
+                        balance = balance - (SEND_AMOUNT + TX_FEE) #  transaction fee 1
+                        res = action("sendtoaddress", [address.rstrip(), SEND_AMOUNT])
+                        resobj = json.loads(res)
+                        if(resobj["result"] is None and resobj["error"] is not None):
+                            print("Error occurred, response: {}".format(res))
+                        else:
+                            print("Send done, transaction id: {}".format(resobj["result"]))
+                        print("Sended {} XBY to address {} calculated \"remaining\" balance: {}".format(SEND_AMOUNT, address.rstrip(), balance))
+                        print("//////////////////////////////////////")
+
+            print("press Ctrl+C to stop")
+            #time.sleep(TIMEOUT_BETWEEN_SENDS)
         except KeyboardInterrupt:
             break
 
